@@ -1,0 +1,39 @@
+[project]
+name = "drive-slower"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Andrew Stewart", email = "andrew.gord.stewart@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "pandas>=3.0.6",
+    "scipy>=1.18.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.3,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+demo = [
+    "altair>=6.3.0",
+    "marimo>=0.25.2",
+]
+dev = [
+    "jupyterlab>=4.6.4",
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# marimo cells end with an explicit `return` by convention.
+"demo/*.py" = ["PLR1711"]
+
+[tool.marimo.display]
+# Follow the viewer's light/dark setting.
+theme = "system"

@@ -1,0 +1,32 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "speed-demo",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "marimo",
+        "run",
+        "demo/speed_demo.py",
+        "--headless",
+        "--port",
+        "2718",
+        "--no-token"
+      ],
+      "port": 2718
+    },
+    {
+      "name": "speed-demo-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "2719",
+        "--directory",
+        "build/wasm"
+      ],
+      "port": 2719
+    }
+  ]
+}
