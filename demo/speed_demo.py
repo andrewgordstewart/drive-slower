@@ -18,15 +18,18 @@ async def _():
         import importlib
 
         micropip = importlib.import_module("micropip")
+        pyfetch = importlib.import_module("pyodide.http").pyfetch
         await micropip.install(["numpy", "scipy", "pandas", "altair"])
-        await micropip.install(
-            str(
-                mo.notebook_location()
-                / "public"
-                / "drive_slower-0.1.0-py3-none-any.whl"
-            ),
-            deps=False,
+        # The wheel's URL is the same on every deploy and GitHub Pages lets browsers
+        # cache it for 10 minutes, so a cached copy can be older than this page.
+        # "no-cache" revalidates (cheaply, by ETag) on every load.
+        _wheel = "drive_slower-0.1.0-py3-none-any.whl"
+        _resp = await pyfetch(
+            str(mo.notebook_location() / "public" / _wheel), cache="no-cache"
         )
+        with open(f"/tmp/{_wheel}", "wb") as _f:  # noqa: ASYNC230 (in-memory FS)
+            _f.write(await _resp.bytes())
+        await micropip.install(f"emfs:/tmp/{_wheel}", deps=False)
 
     from drive_slower import charts, curves
     from drive_slower import scenarios as sc
