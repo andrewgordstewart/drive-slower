@@ -14,8 +14,11 @@ The crash term is Nilsson's power model anchored at the road's prevailing traffi
 speed, not a fixed speed, so a road built for 120 km/h isn't penalised for being one.
 `deviation_penalty` optionally adds Solomon-style risk for driving away from the flow
 in either direction. The evidence for that is mixed, so it defaults to zero.
+
+Speeding tickets are estimated separately (`Tickets`) and are not part of cost/km.
 """
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
@@ -119,6 +122,61 @@ def cost_per_km(s: Scenario, v: float) -> float:
 def optimal_speed(s: Scenario, bounds: tuple[float, float] = SPEED_BOUNDS) -> float:
     res = minimize_scalar(lambda v: cost_per_km(s, v), bounds=bounds, method="bounded")
     return float(res.x)
+
+
+@dataclass(frozen=True)
+class TicketRules:
+    """One province's speeding penalties, by km/h over the limit."""
+
+    # (up to km/h over, flat $, $ per km/h over), ascending; the last is unbounded.
+    fines: tuple[tuple[float, float, float], ...]
+    insurance: float  # expected premium increase per ordinary ticket, $
+    severe_over: float  # beyond this many km/h over: impound, suspension
+    severe_cost: float  # extra $ beyond that line: impound, premiums, bigger fines
+    hours: float  # time lost per ordinary ticket: the stop, paying, sometimes disputing
+    severe_hours: float  # getting home, a week without the vehicle, the impound lot
+
+    def cost(self, over: float, value_of_time: float) -> float:
+        """$ for one ticket at `over` km/h over the limit."""
+        _, flat, per_kmh = next(f for f in self.fines if over <= f[0])
+        severe = over > self.severe_over
+        return (
+            flat
+            + per_kmh * over
+            + self.insurance
+            + (self.severe_cost if severe else 0.0)
+            + value_of_time * (self.severe_hours if severe else self.hours)
+        )
+
+
+@dataclass(frozen=True)
+class Tickets:
+    """Expected yearly cost of speeding tickets.
+
+    Deliberately left out of cost_per_km: its key input, how heavily a road is
+    patrolled, isn't published; penalties jump at fixed lines, which would trip the
+    optimiser; and at plausible enforcement it barely moves the answer.
+    """
+
+    rules: TicketRules
+    # Tickets per 10,000 km if you were always far enough over to be pulled.
+    per_10k_km: float
+    tolerance: float  # km/h over at which half of detected drivers get stopped
+    spread: float = 4.0  # km/h; how fuzzy that tolerance is
+
+    def p_stop(self, over: float) -> float:
+        if over <= 0:
+            return 0.0
+        return 1 / (1 + math.exp(-(over - self.tolerance) / self.spread))
+
+    def per_year(self, v: float, limit: float, annual_km: float) -> float:
+        return annual_km / 10_000 * self.per_10k_km * self.p_stop(v - limit)
+
+    def annual_cost(
+        self, v: float, limit: float, annual_km: float, value_of_time: float
+    ) -> float:
+        n = self.per_year(v, limit, annual_km)
+        return n * self.rules.cost(v - limit, value_of_time) if n else 0.0
 
 
 @dataclass(frozen=True)

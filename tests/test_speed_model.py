@@ -51,6 +51,26 @@ def test_deviation_penalty_pulls_optimum_toward_flow() -> None:
     assert optimal_speed(s) < optimal_speed(with_penalty) < s.road.flow
 
 
+def test_no_tickets_at_or_below_the_limit() -> None:
+    t = sc.tickets()
+    assert t.per_year(100, 100, sc.ANNUAL_KM) == 0
+    assert t.annual_cost(90, 100, sc.ANNUAL_KM, 20) == 0
+
+
+def test_ticket_cost_jumps_past_the_impound_line() -> None:
+    bc = sc.TICKET_RULES["BC"]
+    assert bc.cost(41, 20) - bc.cost(40, 20) > 1_000
+
+
+def test_bc_tickets_are_a_rounding_error_next_to_fuel() -> None:
+    # The demo's side note calls BC tickets a rounding error; keep that true.
+    s = sc.scenario()
+    energy = [cost_breakdown(s, v)["energy"] for v in (100, 120)]
+    extra_fuel = (energy[1] - energy[0]) * sc.ANNUAL_KM
+    tickets = sc.tickets().annual_cost(120, 100, sc.ANNUAL_KM, 20)
+    assert tickets < 0.05 * extra_fuel
+
+
 def test_refuel_time_is_proportional_to_energy_use() -> None:
     s = bare()
     got = cost_breakdown(s, 100)["refuel"]
