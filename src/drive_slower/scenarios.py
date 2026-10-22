@@ -47,6 +47,13 @@ PRICES = {
 CRASH_PRIVATE = 0.05
 CRASH_SOCIAL = 0.11
 
+# Minutes of life: a typical 40-year-old's remaining waking hours, ~43 years left
+# (StatCan 2023: 41.4 for men at 40, women a few more) x 16 hours a day. Spreading the
+# value of a statistical life over them gives a conversion factor of ~$36/h.
+VSL = 9e6
+REMAINING_WAKING_HOURS = 43 * 365 * 16
+LIFE_HOUR_VALUE = VSL / REMAINING_WAKING_HOURS
+
 # Transport Canada, Canadian Motor Vehicle Traffic Collision Statistics 2023.
 ROAD_DEATHS, ROAD_DEATHS_YEAR = 1964, 2023
 
@@ -86,9 +93,12 @@ TRAFFIC = {
     "Ontario 401": (150_000, 100),
 }
 
-# Deaths per vehicle-km at the road's normal traffic speed. Estimate for Canadian
-# highways (~0.5 per 100M vehicle-km); the same figure underlies CRASH_*.
+# Deaths per vehicle-km at the road's normal traffic speed; the same figure underlies
+# CRASH_*. Transport Canada puts all roads at 4.3-4.9 per billion vehicle-km (2018-22);
+# divided freeways are probably safer, so this likely overstates their risk.
 FATALITY_RATE = 0.5e-8
+# Drivers were 52% of Canada's road deaths in 2023 (Transport Canada, Table S10).
+DRIVER_SHARE = 0.52
 
 # Speeding tickets: shown on the side, not in the cheapest speed (see Tickets).
 # Enforcement is an estimate, about one ticket per 100,000 km driven well past police
@@ -217,6 +227,12 @@ SOURCES = [
         "url": "https://toi.brage.unit.no/toi-xmlui/bitstream/11250/2602278/1/Elvik_10.1016_j.aap.2018.11.014.pdf",
     },
     {
+        "input": "Remaining life at 40",
+        "value": "≈43 years (41.4 for men); ≈$36 per waking hour at $9M per life",
+        "basis": "partly sourced",
+        "url": "https://www.lifetable.de/File/GetDocument/data%5CCAN%5CCAN000020232023CU1.pdf",
+    },
+    {
         "input": "Road deaths in Canada",
         "value": "1,964 (2023)",
         "basis": "sourced",
@@ -224,9 +240,15 @@ SOURCES = [
     },
     {
         "input": "Highway deaths per km driven",
-        "value": "≈0.5 per 100 million vehicle-km",
-        "basis": "estimate",
-        "url": "",
+        "value": "≈0.5 per 100 million vehicle-km (Canada, all roads: 0.43–0.49)",
+        "basis": "sourced (all roads)",
+        "url": "https://tdih-cdit.tc.canada.ca/sites/default/files/addendum-tables/2023/S7-en.pdf",
+    },
+    {
+        "input": "Drivers' share of road deaths",
+        "value": "52% (2023)",
+        "basis": "sourced",
+        "url": "https://tdih-cdit.tc.canada.ca/sites/default/files/addendum-tables/2024/S10-en.pdf",
     },
     {
         "input": "Traffic on each stretch",

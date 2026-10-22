@@ -200,6 +200,22 @@ def crash_multiplier(s: Scenario, speeds: Iterable[float] = SPEEDS) -> pd.DataFr
     )
 
 
+def extra_death_risk(s: Scenario, v: float, km: float, everyone: bool = False) -> float:
+    """Change in the chance of a road death from driving km at v instead of the limit:
+    yours (drivers' share of road deaths), or anyone's. Negative below the limit."""
+    fatal = replace(s.crash, cost_per_km=1.0, shares=(1.0, 0.0, 0.0))
+    change = fatal.cost(v, s.road.flow) - fatal.cost(s.road.limit, s.road.flow)
+    return km * sc.FATALITY_RATE * (1 if everyone else sc.DRIVER_SHARE) * change
+
+
+def life_minutes_lost(
+    s: Scenario, v: float, km: float, everyone: bool = False
+) -> float:
+    """Expected waking minutes of life lost to that extra death risk, at a typical
+    40-year-old's remaining life. Deaths only: injuries aren't counted."""
+    return extra_death_risk(s, v, km, everyone) * sc.REMAINING_WAKING_HOURS * 60
+
+
 def road_deaths(
     s: Scenario, vehicles_per_day: float, length_km: float, speeds: Mapping[str, float]
 ) -> pd.DataFrame:
