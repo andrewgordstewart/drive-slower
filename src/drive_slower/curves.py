@@ -216,6 +216,27 @@ def life_minutes_lost(
     return extra_death_risk(s, v, km, everyone) * sc.REMAINING_WAKING_HOURS * 60
 
 
+def life_trade(s: Scenario, v: float, km: float) -> pd.DataFrame:
+    """Segments for the minutes-of-life chart: commute minutes saved (or added), and
+    minutes of life lost (or saved), yours then other people's. Rounded like the text,
+    so the parts add up to the totals shown."""
+    faster = v > s.road.limit
+    commute = abs(60 * km * (1 / s.road.limit - 1 / v))
+    mine = abs(round(life_minutes_lost(s, v, km), 1))
+    total = abs(round(life_minutes_lost(s, v, km, everyone=True), 1))
+    time_bar = "Commute time saved" if faster else "Commute time added"
+    life_bar = f"Life {'lost' if faster else 'saved'} (deaths only)"
+    rows = [
+        (time_bar, "upgraded" if faster else "still lived", 0.0, commute),
+        (life_bar, "yours", 0.0, mine),
+        (life_bar, "other people's", mine, total),
+    ]
+    return pd.DataFrame(
+        {"bar": bar, "part": part, "start": start, "end": end, "minutes": end - start}
+        for bar, part, start, end in rows
+    )
+
+
 def road_deaths(
     s: Scenario, vehicles_per_day: float, length_km: float, speeds: Mapping[str, float]
 ) -> pd.DataFrame:

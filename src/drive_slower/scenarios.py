@@ -48,11 +48,8 @@ CRASH_PRIVATE = 0.05
 CRASH_SOCIAL = 0.11
 
 # Minutes of life: a typical 40-year-old's remaining waking hours, ~43 years left
-# (StatCan 2023: 41.4 for men at 40, women a few more) x 16 hours a day. Spreading the
-# value of a statistical life over them gives a conversion factor of ~$36/h.
-VSL = 9e6
+# (StatCan 2023: 41.4 for men at 40, women a few more) x 16 hours a day.
 REMAINING_WAKING_HOURS = 43 * 365 * 16
-LIFE_HOUR_VALUE = VSL / REMAINING_WAKING_HOURS
 
 # Transport Canada, Canadian Motor Vehicle Traffic Collision Statistics 2023.
 ROAD_DEATHS, ROAD_DEATHS_YEAR = 1964, 2023
@@ -228,7 +225,7 @@ SOURCES = [
     },
     {
         "input": "Remaining life at 40",
-        "value": "≈43 years (41.4 for men); ≈$36 per waking hour at $9M per life",
+        "value": "≈43 years (41.4 for men)",
         "basis": "partly sourced",
         "url": "https://www.lifetable.de/File/GetDocument/data%5CCAN%5CCAN000020232023CU1.pdf",
     },

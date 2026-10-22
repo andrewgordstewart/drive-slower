@@ -142,3 +142,13 @@ def test_road_deaths_baseline_and_power_law() -> None:
         sc.FATALITY_RATE * vkm * (100 / s.road.flow) ** 4
     )
     charts.deaths_chart(df).to_dict()
+
+
+def test_life_trade_parts_add_up_and_chart_builds() -> None:
+    s = sc.scenario()
+    df = curves.life_trade(s, 120, 50)
+    assert df["end"].tolist() == pytest.approx([5.0, 1.7, 3.3])
+    assert df.iloc[2]["start"] == df.iloc[1]["end"]
+    assert "lost" in df.iloc[1]["bar"]
+    assert "saved" in curves.life_trade(s, 90, 50).iloc[1]["bar"]
+    charts.life_trade_chart(df).to_dict()
