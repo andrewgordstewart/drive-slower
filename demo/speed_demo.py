@@ -358,7 +358,17 @@ def _(charts, curves, mo, road, sc, time_share, value_of_time, wage):
 
 
 @app.cell
-def _(annual_km, charts, cost_breakdown, crash_view, curves, mo, sc, scn, your_speed):
+def _(
+    annual_km,
+    charts,
+    cost_breakdown,
+    crash_view,
+    curves,
+    mo,
+    sc,
+    scn,
+    your_speed,
+):
     _mult = curves.crash_multiplier(scn).set_index("speed")
     _you, _lim = round(your_speed.value), round(scn.road.limit)
     _change = _mult.loc[_you, "fatal"] / _mult.loc[_lim, "fatal"] - 1
@@ -420,7 +430,7 @@ def _(annual_km, charts, cost_breakdown, crash_view, curves, mo, sc, scn, your_s
 
 
 @app.cell
-def _(charts, curves, mo, one_way, sc, scn, value_of_time, your_speed):
+def _(charts, curves, mo, one_way, sc, scn, your_speed):
     _v, _lim, _km = your_speed.value, scn.road.limit, one_way.value
     _saved = 60 * _km * (1 / _lim - 1 / _v)
     # Round first so the two parts add up to the total as shown.
@@ -464,12 +474,6 @@ def _(charts, curves, mo, one_way, sc, scn, value_of_time, your_speed):
         [
             mo.md(f"### Another way to see it: minutes of life\n{_body}"),
             *_chart,
-            mo.md(
-                "*If we needed a conversion factor: \\$9 million per statistical life "
-                f"works out to about \\${sc.LIFE_HOUR_VALUE:.0f} for each waking hour a "
-                "typical 40-year-old has left, compared with the "
-                f"\\${value_of_time:.0f}/hour this page puts on time spent commuting.*"
-            ),
         ]
     )
 
@@ -565,7 +569,17 @@ def _(annual_km, charts, curves, mo, scn, your_speed):
 
 
 @app.cell
-def _(annual_km, curves, mo, one_way, road, sc, scn, value_of_time, your_speed):
+def _(
+    annual_km,
+    curves,
+    mo,
+    one_way,
+    road,
+    sc,
+    scn,
+    value_of_time,
+    your_speed,
+):
     _lim = scn.road.limit
     _region, _ = sc.ROADS[road.value]
     _tix = sc.tickets(road.value)
@@ -820,7 +834,17 @@ def _(mo):
 
 @app.cell
 def _(
-    Ranges, build, charts, curves, deviation, mo, price, run_mc, sc, scn, value_of_time
+    Ranges,
+    build,
+    charts,
+    curves,
+    deviation,
+    mo,
+    price,
+    run_mc,
+    sc,
+    scn,
+    value_of_time,
 ):
     mo.stop(
         not run_mc.value,
