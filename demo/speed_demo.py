@@ -458,6 +458,92 @@ def _(annual_km, charts, curves, mo, scn, your_speed):
 
 
 @app.cell
+def _(annual_km, curves, mo, one_way, road, sc, scn, value_of_time, your_speed):
+    _lim = scn.road.limit
+    _region, _ = sc.ROADS[road.value]
+    _tix = sc.tickets(road.value)
+    # Below the limit, illustrate the delay with a speed that would risk a ticket.
+    _v = your_speed.value if your_speed.value > _lim else _lim + 20
+    _saved = 60 * one_way.value * (1 / _lim - 1 / _v)
+
+    if your_speed.value <= _lim:
+        _dollars = (
+            "At or below the limit there's nothing to count. Move the speed slider "
+            f"above {_lim:.0f} to see what tickets would add."
+        )
+    else:
+        _per_year = _tix.per_year(_v, _lim, annual_km)
+        _cost = _tix.annual_cost(_v, _lim, annual_km, value_of_time)
+        _other = (
+            curves.tradeoff(scn, _v, annual_km)
+            .set_index("component")["change"]
+            .drop("time")
+            .sum()
+        )
+        _share = _cost / _other if _other > 0 else 0.0
+        _size = (
+            "a rounding error"
+            if _share < 0.03
+            else "small"
+            if _share < 0.25
+            else "a real cost"
+        )
+        _often = (
+            f"about one ticket every **{1 / _per_year:.0f} years**"
+            if _per_year * 50 >= 1
+            else "a ticket less than once in 50 years"
+        )
+        _dollars = (
+            f"At {_v:.0f} km/h you'd expect {_often} on this commute. Fines, insurance "
+            f"and the time it takes come to about **\\${_cost:,.0f} a year**, next to "
+            f"**\\${_other:,.0f}** in extra fuel, wear and crash risk: {_size}."
+        )
+        if _v - _lim > _tix.rules.severe_over:
+            _dollars += (
+                f" Past {_lim + _tix.rules.severe_over:.0f} it stops being an ordinary "
+                "ticket: your vehicle is impounded at the roadside."
+            )
+
+    if _region == "ON":
+        _insurance = (
+            "In Ontario, most of a ticket's cost is insurance: one conviction typically raises "
+            "your premium for three years. **The only way to dodge that is to fight the "
+            "ticket:** hours of your time, months of waiting and no guarantee of "
+            "winning. It's far easier not to get the ticket at all: stay within a few "
+            "km/h of the limit."
+        )
+    else:
+        _insurance = (
+            "In BC, one ticket won't raise your insurance, but a second within a year "
+            "will. **The only way to keep it off your record is to fight it:** hours of "
+            "your time, and no guarantee of winning. It's easier not to get the "
+            "ticket: stay within a few km/h of the limit."
+        )
+
+    mo.callout(
+        mo.md(
+            "### Side note: what about speeding tickets?\n"
+            f"{_dollars}\n\n"
+            f"{_insurance}\n\n"
+            "**The cost you'll feel most is being late.** A stop takes about "
+            f"{sc.STOP_MINUTES} minutes, and it lands on the trip where you were "
+            f"trying to save time. Driving {_v:.0f} instead of {_lim:.0f} saves "
+            f"**{_saved:.1f} minutes** on this {one_way.value:.0f} km trip; one stop "
+            f"costs about {sc.STOP_MINUTES}. If you need to be somewhere on time, "
+            f"leave {_saved:.0f} minutes earlier and drive the limit: you arrive just "
+            "as soon, every time, without the risk. And the faster you go, the likelier "
+            "the stop, so speeding hard because you're late is when you're most likely "
+            "to be pulled over.\n\n"
+            "*Tickets aren't counted in the cheapest speed: they depend on how heavily "
+            "your route is patrolled, which nobody publishes, and they barely move the "
+            "answer.*"
+        ),
+        kind="info",
+    )
+    return
+
+
+@app.cell
 def _(annual_km, best, curves, mo, scn, your_speed):
     _curve = curves.cost_curve(
         scn, annual_km, speeds=[best, scn.road.limit, your_speed.value]

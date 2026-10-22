@@ -5,9 +5,18 @@ Two perspectives:
   social   everyone's costs: full crash harm plus CO2 at Canada's social cost of carbon.
 """
 
+import math
 from typing import Literal
 
-from drive_slower.speed_model import CrashModel, Maintenance, Road, Scenario, Vehicle
+from drive_slower.speed_model import (
+    CrashModel,
+    Maintenance,
+    Road,
+    Scenario,
+    TicketRules,
+    Tickets,
+    Vehicle,
+)
 
 Perspective = Literal["private", "social"]
 
@@ -80,6 +89,49 @@ TRAFFIC = {
 # Deaths per vehicle-km at the road's normal traffic speed. Estimate for Canadian
 # highways (~0.5 per 100M vehicle-km); the same figure underlies CRASH_*.
 FATALITY_RATE = 0.5e-8
+
+# Speeding tickets: shown on the side, not in the cheapest speed (see Tickets).
+# Enforcement is an estimate, about one ticket per 100,000 km driven well past police
+# tolerance; nobody publishes patrol density or tolerance.
+TICKETS_PER_10K_KM = 0.1
+TICKET_TOLERANCE = 15.0  # km/h over
+# Routine stops mostly take 10-15 min. Add ~10 min to pay, and the ~16% of BC tickets
+# that are disputed (~30% of those reach a ~4 h hearing): ~40 min per ticket on average.
+STOP_MINUTES = 15
+TICKET_HOURS = 40 / 60
+IMPOUND_HOURS = 10.0  # estimate: getting home, a week without the vehicle, the lot
+
+TICKET_RULES = {
+    # Fines over 40 km/h over are sourced (gov.bc.ca); lower tiers only from secondary
+    # sources. One 3-point ticket adds no ICBC premium, but two in a year cost $367, so
+    # ~$50 expected per ticket (estimate). Beyond 40 over: 7-day impound plus Driver
+    # Risk Premium, ~$1,500 (estimate).
+    "BC": TicketRules(
+        fines=((20, 138, 0), (40, 196, 0), (60, 368, 0), (math.inf, 483, 0)),
+        insurance=50,
+        severe_over=40,
+        severe_cost=1_500,
+        hours=TICKET_HOURS,
+        severe_hours=IMPOUND_HOURS,
+    ),
+    # Fines ~$2.50-3.75 per km/h over plus ~$25 in surcharges (law-firm sources). One
+    # minor conviction raised a sample driver's premium ~11%, ~$1,000 over three years
+    # (Ratehub); some insurers forgive a first. 50+ over is stunt driving: $2,000+ fine,
+    # 14-day impound, a large premium increase (~$5,000 all-in, estimate).
+    "ON": TicketRules(
+        fines=((15, 25, 2.5), (29, 25, 3.0), (math.inf, 25, 3.75)),
+        insurance=1_000,
+        severe_over=49,
+        severe_cost=5_000,
+        hours=TICKET_HOURS,
+        severe_hours=IMPOUND_HOURS,
+    ),
+}
+
+
+def tickets(road: str = "BC Hwy 1 (Lower Mainland)") -> Tickets:
+    region, _ = ROADS[road]
+    return Tickets(TICKET_RULES[region], TICKETS_PER_10K_KM, TICKET_TOLERANCE)
 
 
 def scenario(
@@ -209,6 +261,36 @@ SOURCES = [
     {
         "input": "Refuelling stop",
         "value": "10 min per ~70 L",
+        "basis": "estimate",
+        "url": "",
+    },
+    {
+        "input": "Speeding fines (BC)",
+        "value": "$138 / $196 / $368–483 by km/h over",
+        "basis": "partly sourced",
+        "url": "https://www2.gov.bc.ca/gov/content/transportation/driving-and-cycling/roadsafetybc/high-risk/speed",
+    },
+    {
+        "input": "ICBC points premium",
+        "value": "$0 for one ticket, $367 for two in a year",
+        "basis": "sourced",
+        "url": "https://icbc.com/driver-licensing/tickets/Driver-Penalty-Points",
+    },
+    {
+        "input": "Insurance after a ticket (Ontario)",
+        "value": "≈+11%, ~$1,000 over 3 years (one sample driver)",
+        "basis": "sourced (comparison site)",
+        "url": "https://www.ratehub.ca/blog/total-cost-traffic-ticket-ontario/",
+    },
+    {
+        "input": "Time lost per ticket",
+        "value": "~15 min stop; ~40 min average incl. paying and disputes",
+        "basis": "partly sourced",
+        "url": "https://news.gov.bc.ca/releases/2021AG0107-001312",
+    },
+    {
+        "input": "Ticket enforcement",
+        "value": "~1 per 100,000 km driven >15 km/h over",
         "basis": "estimate",
         "url": "",
     },
