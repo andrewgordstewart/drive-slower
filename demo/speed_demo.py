@@ -420,7 +420,7 @@ def _(annual_km, charts, cost_breakdown, crash_view, curves, mo, sc, scn, your_s
 
 
 @app.cell
-def _(curves, mo, one_way, sc, scn, value_of_time, your_speed):
+def _(best, curves, mo, one_way, sc, scn, value_of_time, your_speed):
     _v, _lim, _km = your_speed.value, scn.road.limit, one_way.value
     _saved = 60 * _km * (1 / _lim - 1 / _v)
     # Round first so the two parts add up to the total as shown.
@@ -441,8 +441,14 @@ def _(curves, mo, one_way, sc, scn, value_of_time, your_speed):
             f"people's lives, for a total of **{_total:.1f} minutes of life lost to save "
             f"{_saved:.1f} minutes off a commute**.\n\n"
             f"So you're trading {_saved:.1f} minutes of upgraded life for "
-            f"{_total:.1f} whole minutes of life. And that counts only deaths, not "
-            "injuries or other harm."
+            f"{_total:.1f} whole minutes of life, and that counts only deaths. "
+            + (
+                "Add injuries, extra fuel, wear and the chance of a ticket, and "
+                "driving faster looks like a clear loser."
+                if best < _v
+                else "With your settings, though, the full cost count in section 6 "
+                f"puts the cheapest speed at {best:.0f} km/h."
+            )
         )
     elif _v < _lim:
         _body = (
