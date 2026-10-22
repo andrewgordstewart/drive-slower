@@ -12,6 +12,8 @@ async def _():
 
     if "pyodide" in sys.modules:
         # Static (WebAssembly) build: install this project's wheel from public/.
+        # scripts/build_static.sh moves it under a content hash and rewrites this
+        # path, so each page loads the wheel it was built with.
         # Dependencies come from Pyodide's own builds rather than the wheel's pins.
         # Imported indirectly: a plain `import micropip` makes marimo's local
         # missing-package check look for it, which can crash the kernel on startup.
