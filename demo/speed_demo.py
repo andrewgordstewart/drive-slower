@@ -440,20 +440,20 @@ def _(charts, curves, mo, one_way, sc, scn, your_speed):
     if _v > _lim:
         _body = (
             f"Driving **{_v:.0f}** instead of **{_lim:.0f}** gets you to work "
-            f"**{_saved:.1f} minutes** sooner on this {_km:.0f} km trip. But those "
-            "minutes aren't added to your life: you'd have lived them anyway, in "
-            "traffic, with music, a podcast or the news. Getting there sooner just "
-            "upgrades them.\n\n"
-            "Driving faster also makes a deadly crash more likely. Averaged over all "
-            f"your trips, that costs about **{_mine:.1f} minutes of your own life** each "
-            "trip. On almost every trip nothing happens; very rarely, something "
-            f"terrible does. It also costs about **{_others:.1f} minutes** of other "
-            f"people's lives, for a total of **{_total:.1f} minutes of life lost to save "
-            f"{_saved:.1f} minutes off a commute**.\n\n"
-            f"So you're trading {_saved:.1f} minutes of upgraded life for "
-            f"{_total:.1f} whole minutes of life, and that counts only deaths. Add "
-            "injuries, extra fuel, wear and the chance of a ticket, and driving faster "
-            "starts to look like a clear loser."
+            f"**{_saved:.1f} minutes** sooner on this {_km:.0f} km trip. It also makes "
+            "a deadly crash more likely. On average, that costs about "
+            f"**{_mine:.1f} minutes of your own life** per trip, plus "
+            f"**{_others:.1f} minutes** of other people's lives: "
+            f"**{_total:.1f} minutes** in all. On almost every trip nothing happens; "
+            "very rarely, something terrible does.\n\n"
+            f"So it's {_saved:.1f} minutes saved against {_total:.1f} minutes lost. "
+            "But they aren't the same kind of minute. The "
+            f"{_saved:.1f} minutes aren't added to your life: you'd have lived them "
+            "anyway, in the car with music, a podcast or the news. Getting there "
+            f"sooner just frees them up for something else. The {_total:.1f} minutes "
+            "are gone, and that counts only deaths. Add injuries, extra fuel, wear "
+            "and the chance of a ticket, and driving faster starts to look like a "
+            "clear loser."
         )
     elif _v < _lim:
         _body = (
@@ -472,7 +472,11 @@ def _(charts, curves, mo, one_way, sc, scn, your_speed):
     )
     _section = mo.vstack(
         [
-            mo.md(f"### Another way to see it: minutes of life\n{_body}"),
+            mo.md(
+                "### Another way to see it: minutes of life\n"
+                "Driving faster saves time but costs life expectancy, and we can "
+                f"measure both in minutes.\n\n{_body}"
+            ),
             *_chart,
         ]
     )
