@@ -476,3 +476,49 @@ def wear_charts(df: pd.DataFrame, markers: Mapping[str, float]) -> list[alt.Laye
         )
         for metric in df["metric"].unique()
     ]
+
+
+def life_trade_chart(df: pd.DataFrame) -> alt.LayerChart:
+    """Commute minutes saved (pale outline: time you'd live anyway, just upgraded)
+    against whole minutes of life lost (solid: yours, then other people's)."""
+    order = list(dict.fromkeys(df["bar"]))
+    y = alt.Y("bar:N", sort=order, title=None, axis=alt.Axis(labelLimit=220))
+    x = alt.X("start:Q", title="Minutes per trip")
+    commute = df["bar"] == order[0]
+    styled = df.assign(
+        fill=commute.map({True: COLORS["time"], False: COLORS["crash"]}),
+        alpha=[
+            0.15 if c else 1.0 if p == "yours" else 0.55
+            for c, p in zip(commute, df["part"], strict=True)
+        ],
+        line=commute.map({True: COLORS["time"], False: "transparent"}),
+    )
+    bars = (
+        alt.Chart(styled)
+        .mark_bar(height=26, strokeWidth=2)
+        .encode(
+            y=y,
+            x=x,
+            x2="end:Q",
+            color=alt.Color("fill:N", scale=None),
+            fillOpacity=alt.FillOpacity("alpha:Q", scale=None),
+            stroke=alt.Stroke("line:N", scale=None),
+            tooltip=[
+                alt.Tooltip("bar:N", title=" "),
+                alt.Tooltip("part:N", title=" "),
+                alt.Tooltip("minutes:Q", title="minutes", format=".1f"),
+            ],
+        )
+    )
+    parts = (
+        alt.Chart(df.assign(mid=(df["start"] + df["end"]) / 2))
+        .transform_filter("datum.minutes >= 0.6")
+        .mark_text(fontSize=11, color=MUTED, dy=-22)
+        .encode(y=y, x=alt.X("mid:Q"), text="part:N")
+    )
+    totals = (
+        alt.Chart(df.groupby("bar", as_index=False)["end"].max())
+        .mark_text(align="left", dx=6, fontSize=12, fontWeight="bold", color=MUTED)
+        .encode(y=y, x="end:Q", text=alt.Text("end:Q", format=".1f"))
+    )
+    return (bars + parts + totals).properties(width=WIDTH, height=130)

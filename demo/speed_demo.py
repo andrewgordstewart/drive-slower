@@ -420,7 +420,7 @@ def _(annual_km, charts, cost_breakdown, crash_view, curves, mo, sc, scn, your_s
 
 
 @app.cell
-def _(curves, mo, one_way, sc, scn, value_of_time, your_speed):
+def _(charts, curves, mo, one_way, sc, scn, value_of_time, your_speed):
     _v, _lim, _km = your_speed.value, scn.road.limit, one_way.value
     _saved = 60 * _km * (1 / _lim - 1 / _v)
     # Round first so the two parts add up to the total as shown.
@@ -457,13 +457,20 @@ def _(curves, mo, one_way, sc, scn, value_of_time, your_speed):
         )
     else:
         _body = "Move the speed slider to compare minutes saved with minutes of life."
-    _section = mo.md(
-        "### Another way to see it: minutes of life\n"
-        f"{_body}\n\n"
-        "*If we needed a conversion factor: \\$9 million per statistical life works "
-        f"out to about \\${sc.LIFE_HOUR_VALUE:.0f} for each waking hour a typical "
-        "40-year-old has left, compared with the "
-        f"\\${value_of_time:.0f}/hour this page puts on time spent commuting.*"
+    _chart = (
+        [charts.life_trade_chart(curves.life_trade(scn, _v, _km))] if _v != _lim else []
+    )
+    _section = mo.vstack(
+        [
+            mo.md(f"### Another way to see it: minutes of life\n{_body}"),
+            *_chart,
+            mo.md(
+                "*If we needed a conversion factor: \\$9 million per statistical life "
+                f"works out to about \\${sc.LIFE_HOUR_VALUE:.0f} for each waking hour a "
+                "typical 40-year-old has left, compared with the "
+                f"\\${value_of_time:.0f}/hour this page puts on time spent commuting.*"
+            ),
+        ]
     )
 
     _details = []
