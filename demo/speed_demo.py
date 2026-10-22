@@ -420,6 +420,106 @@ def _(annual_km, charts, cost_breakdown, crash_view, curves, mo, sc, scn, your_s
 
 
 @app.cell
+def _(curves, mo, one_way, sc, scn, value_of_time, your_speed):
+    _v, _lim, _km = your_speed.value, scn.road.limit, one_way.value
+    _saved = 60 * _km * (1 / _lim - 1 / _v)
+    # Round first so the two parts add up to the total as shown.
+    _mine = round(curves.life_minutes_lost(scn, _v, _km), 1)
+    _total = round(curves.life_minutes_lost(scn, _v, _km, everyone=True), 1)
+    _others = _total - _mine
+    if _v > _lim:
+        _body = (
+            f"Driving **{_v:.0f}** instead of **{_lim:.0f}** gets you to work "
+            f"**{_saved:.1f} minutes** sooner on this {_km:.0f} km trip. But those "
+            "minutes aren't added to your life: you'd have lived them anyway, in "
+            "traffic, with music, a podcast or the news. Getting there sooner just "
+            "upgrades them.\n\n"
+            "Driving faster also makes a deadly crash more likely. Averaged over all "
+            f"your trips, that costs about **{_mine:.1f} minutes of your own life** each "
+            "trip. On almost every trip nothing happens; very rarely, something "
+            f"terrible does. It also costs about **{_others:.1f} minutes** of other "
+            f"people's lives, for a total of **{_total:.1f} minutes of life lost to save "
+            f"{_saved:.1f} minutes off a commute**.\n\n"
+            f"So you're trading {_saved:.1f} minutes of upgraded life for "
+            f"{_total:.1f} whole minutes of life, and that counts only deaths. Add "
+            "injuries, extra fuel, wear and the chance of a ticket, and driving faster "
+            "starts to look like a clear loser."
+        )
+    elif _v < _lim:
+        _body = (
+            f"Driving **{_v:.0f}** instead of **{_lim:.0f}** adds **{-_saved:.1f} "
+            f"minutes** to this {_km:.0f} km trip: minutes you'd still live, with music, "
+            "a podcast or the news. In return, the lower chance of a deadly crash saves "
+            f"about **{-_mine:.1f} minutes of your own life** each trip, averaged over "
+            f"all your trips, and about **{-_others:.1f} minutes** of other people's "
+            f"lives: **{-_total:.1f} whole minutes of life** for {-_saved:.1f} minutes of "
+            "slower commute. That counts only deaths, not injuries or other harm."
+        )
+    else:
+        _body = "Move the speed slider to compare minutes saved with minutes of life."
+    _section = mo.md(
+        "### Another way to see it: minutes of life\n"
+        f"{_body}\n\n"
+        "*If we needed a conversion factor: \\$9 million per statistical life works "
+        f"out to about \\${sc.LIFE_HOUR_VALUE:.0f} for each waking hour a typical "
+        "40-year-old has left, compared with the "
+        f"\\${value_of_time:.0f}/hour this page puts on time spent commuting.*"
+    )
+
+    _details = []
+    if _v != _lim:
+        _url = {s["input"]: s["url"] for s in sc.SOURCES}
+        _rate_url = _url["Highway deaths per km driven"]
+        _drivers_url = _url["Drivers' share of road deaths"]
+        _power_url = _url["Crash risk rises ~speed⁴ (power model)"]
+        _life_url = _url["Remaining life at 40"]
+        _risk = curves.crash_multiplier(scn, [_lim, _v]).set_index("speed")["fatal"]
+        _dp_mine = curves.extra_death_risk(scn, _v, _km)
+        _dp_all = curves.extra_death_risk(scn, _v, _km, everyone=True)
+        _per_km = 1 / (sc.FATALITY_RATE * sc.DRIVER_SHARE)
+        _minutes_left = sc.REMAINING_WAKING_HOURS * 60
+        _change = "higher" if _dp_mine > 0 else "lower"
+
+        def _odds(p):
+            n = 1 / abs(p) / 1e6
+            return f"1 in {n:.1f} million" if n < 10 else f"1 in {n:,.0f} million"
+
+        _calc = mo.md(
+            f"**1. Time.** {_km:.0f} km takes {60 * _km / _lim:.1f} minutes at "
+            f"{_lim:.0f} km/h and {60 * _km / _v:.1f} at {_v:.0f}: a difference of "
+            f"{abs(_saved):.1f} minutes.\n\n"
+            "**2. Your chance of dying per km.** Canada has about 0.5 road deaths per "
+            f"100 million vehicle-km ([Transport Canada]({_rate_url})), and drivers are "
+            f"52% of them ([Transport Canada]({_drivers_url})). So a driver's chance of "
+            f"dying is about 1 in {_per_km / 1e6:.0f} million per km, at the usual speed "
+            f"of traffic ({scn.road.flow:.0f} km/h here).\n\n"
+            "**3. How that changes with speed.** Deaths rise roughly with the fourth "
+            f"power of speed ([Nilsson's power model, Elvik et al. 2019]({_power_url})). "
+            f"Compared with traffic speed, the risk is {_risk[_lim]:.2f}× at "
+            f"{_lim:.0f} km/h and {_risk[_v]:.2f}× at {_v:.0f}. Over {_km:.0f} km, your "
+            f"chance of dying is {_change} by {_km:.0f} × 1/{_per_km / 1e6:.0f} million "
+            f"× ({_risk[_v]:.2f} − {_risk[_lim]:.2f}) ≈ **{_odds(_dp_mine)}**. Counting "
+            f"everyone who could be killed, it's {_change} by about **{_odds(_dp_all)}**."
+            "\n\n"
+            "**4. Into minutes of life.** A 40-year-old has about 43 years left "
+            f"([Statistics Canada]({_life_url})): about {_minutes_left / 1e6:.1f} million "
+            "waking minutes (43 years × 365 days × 16 hours × 60). Yours: "
+            f"{_minutes_left / 1e6:.1f} million × {_odds(_dp_mine)} ≈ "
+            f"**{abs(_mine):.1f} minutes**. Everyone's: {_minutes_left / 1e6:.1f} million "
+            f"× {_odds(_dp_all)} ≈ **{abs(_total):.1f}**. Other people's: "
+            f"{abs(_total):.1f} − {abs(_mine):.1f} = **{abs(_others):.1f}**.\n\n"
+            "*Not counted: injuries, which are far more common than deaths, and other "
+            "harm. These are rough estimates. The death rate is Canada's all-roads "
+            "average (freeways are probably safer), the power model comes from changes "
+            "in whole roads' average speeds, and the other people killed may have more "
+            "or fewer years left than a 40-year-old.*"
+        )
+        _details = [mo.accordion({"Show the calculation": _calc})]
+    mo.vstack([_section, *_details])
+    return
+
+
+@app.cell
 def _(annual_km, charts, curves, mo, scn, your_speed):
     _df = curves.wear_and_stops(
         scn, annual_km, speeds=sorted({scn.road.limit, your_speed.value})

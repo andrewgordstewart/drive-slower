@@ -24,6 +24,18 @@ def test_matches_report_for_default_scenario() -> None:
     assert df["regret"].iloc[0] == pytest.approx(449, abs=1)
 
 
+def test_life_minutes_for_default_trip() -> None:
+    # The demo's minutes-of-life lens: 120 vs 100 on a 50 km trip, deaths only.
+    s = sc.scenario()
+    assert curves.extra_death_risk(s, 120, 50) == pytest.approx(1 / 8.7e6, rel=0.01)
+    assert curves.life_minutes_lost(s, 120, 50) == pytest.approx(1.7, abs=0.05)
+    assert curves.life_minutes_lost(s, 120, 50, everyone=True) == pytest.approx(
+        3.3, abs=0.05
+    )
+    assert curves.life_minutes_lost(s, 100, 50) == 0
+    assert curves.life_minutes_lost(s, 90, 50) < 0
+
+
 def test_tradeoff_is_zero_at_the_limit() -> None:
     s = sc.scenario()
     assert (curves.tradeoff(s, s.road.limit, sc.ANNUAL_KM)["change"] == 0).all()
